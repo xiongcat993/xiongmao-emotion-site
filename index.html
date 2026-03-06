@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>熊猫哥情感｜文章与课程</title>
+  <title>熊猫哥情感</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -12,7 +12,6 @@
       <div class="logo" id="siteLogo">熊猫哥情感</div>
       <nav>
         <a href="#articles">文章</a>
-        <a href="#courses">课程</a>
         <a href="write.html">写文章</a>
       </nav>
     </div>
@@ -24,34 +23,14 @@
       <p id="heroDesc"></p>
       <div class="chips" id="heroChips"></div>
     </div>
-    <div class="card">
-      <h3>发布方式</h3>
-      <ul>
-        <li>打开 write.html</li>
-        <li>填标题/封面/正文</li>
-        <li>点击发布自动上线</li>
-      </ul>
-    </div>
   </section>
 
   <section class="container" id="articles">
-    <div class="row"><h2>📰 最新文章</h2><a class="btn" href="write.html">去写文章</a></div>
+    <div class="row"><h2>📰 文章列表</h2><a class="btn" href="write.html">去写文章</a></div>
     <div class="grid posts" id="articleList"></div>
   </section>
 
-  <section class="container" id="courses">
-    <div class="row">
-      <h2>🎓 课程资源</h2>
-      <div>
-        <select id="categoryFilter"><option value="all">全部分类</option></select>
-        <select id="priceFilter"><option value="all">全部价格</option></select>
-      </div>
-    </div>
-    <div class="grid courses" id="courseList"></div>
-  </section>
-
   <footer><div class="container" id="footerText">© 2026 熊猫哥情感</div></footer>
-
   <script src="app.js"></script>
 </body>
 </html>
