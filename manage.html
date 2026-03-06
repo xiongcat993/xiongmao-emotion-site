@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>文章管理</title>
+<link rel="stylesheet" href="style.css"/>
+<style>
+.post-item{background:#151c33;border:1px solid #273259;border-radius:12px;padding:16px;margin-bottom:12px}
+.post-item h3{margin:0 0 8px}
+.post-item .meta{color:#a7b0d6;font-size:14px;margin-bottom:8px}
+.post-item .actions{display:flex;gap:8px}
+.btn-del{background:#ff4757}
+.btn-edit{background:#ffa502}
+</style>
+</head>
+<body>
+<div class="container" style="padding:24px 20px">
+<h1>📋 文章管理</h1>
+<p>在此管理已发布的文章</p>
+<div class="card">
+<label>GitHub Token</label>
+<input id="token" placeholder="github_pat_xxx" style="width:100%">
+</div>
+<div id="postList" style="margin-top:20px"></div>
+</div>
+<script>
+const REPO='xiongcat993/xiongmao-emotion-site';
+const BRANCH='main';
+const POSTS='posts.json';
+
+async function getPosts(){ const r=await fetch(POSTS+'?_='+Date.now()); return r.json(); }
+function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+async function loadPosts(){
+  const posts=await getPosts();
+  const list=document.getElementById('postList');
+  list.innerHTML=posts.items.map(p=>`<div class="post-item">
+    <h3>${esc(p.title)}</h3>
+    <p class="meta">${p.date||''} | ID: ${p.id}</p>
+    <div class="actions">
+      <button class="btn btn-del" onclick="deletePost('${p.id}')">🗑️ 删除</button>
+    </div>
+  </div>`).join('');
+}
+async function deletePost(id){
+  if(!confirm('确定删除这篇文章？')) return;
+  const token=document.getElementById('token').value.trim();
+  if(!token){alert('请先填 GitHub Token');return;}
+  const posts=await getPosts();
+  posts.items=posts.items.filter(p=>p.id!==id);
+  const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
+  const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
+  const oldJson=await old.json();
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(posts,null,2))));
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'delete post: '+id,content,sha:oldJson.sha,branch:BRANCH})});
+  if(res.ok){alert('删除成功');loadPosts();}
+  else{alert('删除失败: '+(await res.text()).slice(0,80));}
+}
+document.getElementById('token').value=localStorage.getItem('token')||'';
+document.getElementById('token').addEventListener('change',e=>localStorage.setItem('token',e.target.value));
+loadPosts();
+</script>
+</body>
+</html>

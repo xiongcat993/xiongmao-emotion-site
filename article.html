@@ -1,1 +1,31 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>文章详情</title><link rel="stylesheet" href="style.css"/><style>.article-body{padding:20px 0;line-height:1.8;font-size:17px;color:#e8ecff}.article-body b{font-weight:700}.article-body i{font-style:italic}.article-body u{text-decoration:underline}</style></head><body><header class="topbar"><div class="container nav"><div class="logo">熊猫哥情感</div><nav><a href="index.html">返回首页</a><a href="write.html">写文章</a></nav></div></header><main class="container detail" id="detail"></main><script>function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}(async()=>{const id=new URLSearchParams(location.search).get('id');const p=await fetch('posts.json?_='+Date.now()).then(r=>r.json());const a=(p.items||[]).find(x=>x.id===id);const el=document.getElementById('detail');if(!a){el.innerHTML='<h2>文章不存在</h2>';return;}el.innerHTML=`${a.cover?`<img class="cover-lg" src="${esc(a.cover)}" alt="cover">`:''}<h1>${esc(a.title)}</h1><p class="meta">${esc(a.date||'')}</p><div class="article-body">${a.content||''}</div>`;})();</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>文章详情</title>
+<link rel="stylesheet" href="style.css"/>
+<style>
+.article-body{padding:20px 0;line-height:1.8;font-size:17px;color:#e8ecff}
+.article-body b{font-weight:700}
+.article-body i{font-style:italic}
+.article-body u{text-decoration:underline}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container nav"><div class="logo">熊猫哥情感</div><nav><a href="index.html">返回首页</a><a href="write.html">写文章</a></nav></div></header>
+<main class="container detail" id="detail"></main>
+<script>
+function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+function fixCover(url){if(!url) return '';return url.replace('raw.githubusercontent.com','xiongmao-emotion-site.pages.dev');}
+(async()=>{
+const id=new URLSearchParams(location.search).get('id');
+const p=await fetch('posts.json?_='+Date.now()).then(r=>r.json());
+const a=(p.items||[]).find(x=>x.id===id);
+const el=document.getElementById('detail');
+if(!a){el.innerHTML='<h2>文章不存在</h2>';return;}
+el.innerHTML=`${a.cover?`<img class="cover-lg" src="${fixCover(a.cover)}" alt="cover">`:''}<h1>${esc(a.title)}</h1><p class="meta">${esc(a.date||'')}</p><div class="article-body">${a.content||''}</div>`;
+})();
+</script>
+</body>
+</html>
