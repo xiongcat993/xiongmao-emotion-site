@@ -7,14 +7,25 @@ function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"
   const courses = data.courses || [];
 
   document.getElementById('siteLogo').textContent = data.siteName || '熊猫哥情感';
+  document.getElementById('footerText').textContent = data.footerText || '';
+
+  // Hero section
+  const hero = document.querySelector('.hero');
+  if(hero && data.showHero===false){ hero.style.display='none'; }
   document.getElementById('heroTitle').textContent = data.heroTitle || '';
   document.getElementById('heroDesc').textContent = data.heroDesc || '';
-  document.getElementById('footerText').textContent = data.footerText || '';
   document.getElementById('heroChips').innerHTML = (data.heroChips||[]).map(x=>`<span>${esc(x)}</span>`).join('');
+  document.getElementById('heroBullets').innerHTML = (data.heroBullets||[]).map(x=>`<li>${esc(x)}</li>`).join('');
 
+  // Articles section
+  const articlesSec = document.getElementById('articles');
+  if(articlesSec && data.showArticles===false){ articlesSec.style.display='none'; }
   const articleList = document.getElementById('articleList');
   articleList.innerHTML = (posts.items||[]).map(p=>`<article class="post">${p.cover?`<img class="cover" src="${esc(p.cover)}" alt="cover">`:''}<h3>${esc(p.title)}</h3><p class="meta">${esc(p.date||'')}</p><p>${esc(p.excerpt||'')}</p><a class="btn" href="article.html?id=${encodeURIComponent(p.id)}">阅读</a></article>`).join('');
 
+  // Courses section
+  const coursesSec = document.getElementById('courses');
+  if(coursesSec && data.showCourses===false){ coursesSec.style.display='none'; }
   const categoryFilter = document.getElementById('categoryFilter');
   const priceFilter = document.getElementById('priceFilter');
   uniq(courses.map(c=>c.category)).forEach(v=>categoryFilter.insertAdjacentHTML('beforeend',`<option value="${v}">${v}</option>`));

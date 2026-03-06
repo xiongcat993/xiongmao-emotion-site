@@ -1,1 +1,104 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>写文章</title><link rel="stylesheet" href="style.css"/></head><body><div class="container" style="padding:24px 20px"><h1>发文章</h1><p>像公众号一样写：填封面、标题、正文，点发布。</p><div class="card"><label>GitHub Token</label><input id="token" placeholder="github_pat_xxx" style="width:100%"><label>标题</label><input id="title" style="width:100%"><label>封面图URL</label><input id="cover" placeholder="https://..." style="width:100%"><label>正文</label><textarea id="content" style="width:100%;height:260px" placeholder="直接写正文..."></textarea><button class="btn" id="pubBtn">发布文章</button><p id="msg" class="meta"></p><p class="meta">发布后访问：<a href="index.html">首页</a> / <a href="article.html">文章页</a></p></div></div><script src="write.js"></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>写文章</title>
+<link rel="stylesheet" href="style.css"/>
+<style>
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.toolbar button{background:#2d3b6e;color:#fff;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:14px}
+.toolbar button:hover{background:#3d4b7e}
+#editor{min-height:200px;padding:12px;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:10px;margin-bottom:12px;font-size:16px;line-height:1.6}
+#editor:focus{outline:none;border-color:#6ea8fe}
+</style>
+</head>
+<body>
+<div class="container" style="padding:24px 20px">
+<h1>发文章</h1>
+<p>像公众号一样写：选封面、写标题、编辑正文（可加粗/变色），点发布。</p>
+<div class="card">
+<label>GitHub Token</label>
+<input id="token" placeholder="github_pat_xxx" style="width:100%">
+
+<label>标题</label>
+<input id="title" style="width:100%">
+
+<label>封面图片（点击上传或粘贴URL）</label>
+<input type="file" id="coverFile" accept="image/*" style="margin:8px 0">
+<input id="coverUrl" placeholder="或直接贴图片URL" style="width:100%">
+
+<label>正文（支持加粗、颜色）</label>
+<div class="toolbar">
+<button type="button" onclick="format('bold')"><b>B</b> 加粗</button>
+<button type="button" onclick="format('italic')"><i>I</i> 斜体</button>
+<button type="button" onclick="format('underline')"><u>U</u> 下划线</button>
+<button type="button" onclick="format('forecolor','#ff6b6b')">🔴 红</button>
+<button type="button" onclick="format('forecolor','#ffd93d')">🟡 黄</button>
+<button type="button" onclick="format('forecolor','#6bcb77')">🟢 绿</button>
+<button type="button" onclick="format('forecolor','#4d96ff')">🔵 蓝</button>
+<button type="button" onclick="format('forecolor','#e8ecff')">⚪ 白</button>
+</div>
+<div id="editor" contenteditable="true" placeholder="在这里写正文..."></div>
+
+<button class="btn" id="pubBtn">发布文章</button>
+<p id="msg" class="meta"></p>
+<p class="meta">发布后访问：<a href="index.html">首页</a> | <a href="article.html">文章页</a></p>
+</div>
+</div>
+<script>
+function format(cmd,val){document.execCommand(cmd,false,val);}
+const REPO='xiongcat993/xiongmao-emotion-site';
+const BRANCH='main';
+const POSTS='posts.json';
+
+async function getPosts(){
+  const r=await fetch(POSTS+'?_='+Date.now());
+  return r.ok?r.json():{items:[]};
+}
+async function uploadImage(file,token){
+  const api=`https://api.github.com/repos/${REPO}/contents/covers/${file.name}`;
+  const contentB64=btoa(await file.arrayBuffer());
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'upload cover',content:contentB64,branch:BRANCH})});
+  if(!res.ok) throw new Error('图片上传失败');
+  const json=await res.json();
+  return json.content.download_url;
+}
+function $(id){return document.getElementById(id)}
+$('pubBtn').onclick=async()=>{
+  try{
+    const token=$('token').value.trim();
+    if(!token) throw new Error('请先填 GitHub Token');
+    const title=$('title').value.trim();
+    if(!title) throw new Error('请填写标题');
+    const content=$('editor').innerHTML.trim();
+    if(!content || content=='<br>') throw new Error('请填写正文');
+
+    let cover=$('coverUrl').value.trim();
+    const file=$('coverFile').files[0];
+    if(file){
+      $('msg').textContent='正在上传图片...';
+      cover=await uploadImage(file,token);
+    }
+
+    const id='p'+Date.now();
+    const date=new Date().toISOString().slice(0,10);
+    const excerpt=$('editor').innerText.slice(0,60)+'...';
+    const posts=await getPosts();
+    const newItem={id,title,cover,content,date,excerpt};
+    posts.items=[newItem,...posts.items];
+    
+    const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
+    const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
+    if(!old.ok) throw new Error('读取失败，请检查 Token');
+    const oldJson=await old.json();
+    const contentB64=btoa(unescape(encodeURIComponent(JSON.stringify(posts,null,2))));
+    const put=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'publish: '+title,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
+    if(!put.ok) throw new Error('发布失败: '+(await put.text()).slice(0,80));
+    $('msg').textContent='发布成功！请访问首页查看。';
+    $('title').value='';$('editor').innerHTML='';$('coverUrl').value='';$('coverFile').value='';
+  }catch(e){$('msg').textContent=e.message;}
+};
+</script>
+</body>
+</html>
