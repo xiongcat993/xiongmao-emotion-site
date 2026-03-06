@@ -9,9 +9,12 @@
 .post-item{background:#151c33;border:1px solid #273259;border-radius:12px;padding:16px;margin-bottom:12px}
 .post-item h3{margin:0 0 8px}
 .post-item .meta{color:#a7b0d6;font-size:14px;margin-bottom:8px}
-.post-item .actions{display:flex;gap:8px}
+.post-item .actions{display:flex;gap:8px;flex-wrap:wrap}
 .btn-del{background:#ff4757}
 .btn-edit{background:#ffa502}
+.edit-panel{background:#1a2340;border:1px solid #3d4b7e;border-radius:12px;padding:16px;margin-top:12px}
+.edit-panel input,.edit-panel textarea{width:100%;padding:10px;margin:8px 0;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px}
+.edit-panel textarea{min-height:200px}
 </style>
 </head>
 <body>
@@ -34,13 +37,49 @@ function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"
 async function loadPosts(){
   const posts=await getPosts();
   const list=document.getElementById('postList');
-  list.innerHTML=posts.items.map(p=>`<div class="post-item">
+  list.innerHTML=posts.items.map(p=>`<div class="post-item" id="post-${p.id}">
     <h3>${esc(p.title)}</h3>
     <p class="meta">${p.date||''} | ID: ${p.id}</p>
     <div class="actions">
+      <button class="btn btn-edit" onclick="showEdit('${p.id}')">✏️ 编辑</button>
       <button class="btn btn-del" onclick="deletePost('${p.id}')">🗑️ 删除</button>
     </div>
+    <div id="edit-${p.id}" class="edit-panel" style="display:none">
+      <label>标题</label>
+      <input id="title-${p.id}" value="${esc(p.title||'')}">
+      <label>封面图URL</label>
+      <input id="cover-${p.id}" value="${esc(p.cover||'')}">
+      <label>正文</label>
+      <textarea id="content-${p.id}">${esc(p.content||'')}</textarea>
+      <button class="btn" onclick="savePost('${p.id}')">💾 保存修改</button>
+    </div>
   </div>`).join('');
+}
+function showEdit(id){
+  const p=document.getElementById('edit-'+id);
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+async function savePost(id){
+  const token=document.getElementById('token').value.trim();
+  if(!token){alert('请先填 GitHub Token');return;}
+  const title=document.getElementById('title-'+id).value.trim();
+  const cover=document.getElementById('cover-'+id).value.trim();
+  const content=document.getElementById('content-'+id).value;
+  const posts=await getPosts();
+  const idx=posts.items.findIndex(p=>p.id===id);
+  if(idx===-1){alert('文章不存在');return;}
+  posts.items[idx].title=title;
+  posts.items[idx].cover=cover;
+  posts.items[idx].content=content;
+  posts.items[idx].excerpt=content.slice(0,60)+'...';
+  const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
+  const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
+  const oldJson=await old.json();
+  const dataStr=JSON.stringify(posts,null,2);
+  const contentB64=btoa(unescape(encodeURIComponent(dataStr)));
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'update post: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
+  if(res.ok){alert('保存成功');loadPosts();}
+  else{alert('保存失败: '+(await res.text()).slice(0,80));}
 }
 async function deletePost(id){
   if(!confirm('确定删除这篇文章？')) return;
