@@ -11,13 +11,12 @@
 .toolbar button:hover{background:#3d4b7e}
 #editor{min-height:250px;padding:12px;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:10px;margin-bottom:12px;font-size:16px;line-height:1.6}
 #editor:focus{outline:none;border-color:#6ea8fe}
-#coverFile{margin:8px 0}
 </style>
 </head>
 <body>
 <div class="container" style="padding:24px 20px">
 <h1>发文章</h1>
-<p>支持直接上传封面图、正文内插入图片</p>
+<p>支持直接上传封面图，正文内插入图片</p>
 <div class="card">
 <label>GitHub Token</label>
 <input id="token" placeholder="github_pat_xxx" style="width:100%">
@@ -72,7 +71,6 @@ coverFile.addEventListener('change',async()=>{
     const contentB64=btoa(await file.arrayBuffer());
     const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'upload cover',content:contentB64,branch:BRANCH})});
     if(!res.ok) throw new Error('上传失败');
-    const json=await res.json();
     coverUrl = 'https://xiongmao-emotion-site.pages.dev/covers/'+file.name;
     coverStatus.textContent='封面上传成功！';
   }catch(e){coverStatus.textContent='封面上传失败: '+e.message;}

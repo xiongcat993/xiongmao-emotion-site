@@ -1,8 +1,11 @@
 async function getJson(path){ const r = await fetch(path + '?_=' + Date.now()); return r.json(); }
-function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+function esc(s=''){return (s||'').replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
 function fixCover(url){
   if(!url) return '';
-  return url.replace('raw.githubusercontent.com','xiongmao-emotion-site.pages.dev');
+  if(url.includes('raw.githubusercontent.com')){
+    return url.replace('raw.githubusercontent.com','xiongmao-emotion-site.pages.dev');
+  }
+  return url;
 }
 (async()=>{
   const data = await getJson('data.json');
@@ -25,7 +28,7 @@ function fixCover(url){
   const articleList = document.getElementById('articleList');
   if(posts.items && posts.items.length > 0){
     articleList.innerHTML = posts.items.map(p=>`<article class="post">
-      ${p.cover?`<img class="cover" src="${fixCover(p.cover)}" alt="cover">`:''}
+      ${p.cover?`<img src="${fixCover(p.cover)}" alt="cover">`:''}
       <h3>${esc(p.title)}</h3>
       <p class="meta">${esc(p.date||'')}</p>
       <p>${esc(p.excerpt||'')}</p>

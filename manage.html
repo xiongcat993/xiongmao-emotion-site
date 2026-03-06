@@ -11,12 +11,12 @@
 .post-item .meta{color:#a7b0d6;font-size:14px;margin-bottom:12px}
 .edit-box{background:#1a2340;border-radius:12px;padding:16px;margin-top:12px}
 .edit-box input,.edit-box textarea{width:100%;padding:10px;margin:8px 0;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px}
-.edit-box textarea{min-height:150px}
-.edit-editor{min-height:200px;padding:10px;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px;margin:8px 0}
+.edit-box textarea{min-height:200px}
 .btn-del{background:#ff4757;margin-right:8px}
 .btn-save{background:#2ed573}
-.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
-.toolbar button{background:#2d3b6e;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px}
+.edit-toolbar{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap}
+.edit-toolbar button{background:#3d4b7e;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px}
+.edit-editor{min-height:200px;padding:10px;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px;margin:8px 0;line-height:1.6}
 </style>
 </head>
 <body>
@@ -58,14 +58,14 @@ async function loadPosts(){
       <input type="file" id="coverfile-${p.id}" accept="image/*" onchange="uploadCover('${p.id}')">
       <p id="coverstatus-${p.id}" class="meta"></p>
       <label>正文（富文本编辑）</label>
-      <div class="toolbar">
-        <button type="button" onclick="format('bold','${p.id}')><b>B</b></button>
-        <button type="button" onclick="format('italic','${p.id}')><i>I</i></button>
-        <button type="button" onclick="format('underline','${p.id}')><u>U</u></button>
-        <button type="button" onclick="format('forecolor','#ff6b6b','${p.id}')>🔴</button>
-        <button type="button" onclick="format('forecolor','#ffd93d','${p.id}')>🟡</button>
-        <button type="button" onclick="format('forecolor','#6bcb77','${p.id}')>🟢</button>
-        <button type="button" onclick="format('forecolor','#4d96ff','${p.id}')>🔵</button>
+      <div class="edit-toolbar">
+        <button type="button" onclick="formatText('bold','${p.id}')><b>B</b></button>
+        <button type="button" onclick="formatText('italic','${p.id}')><i>I</i></button>
+        <button type="button" onclick="formatText('underline','${p.id}')><u>U</u></button>
+        <button type="button" onclick="formatText('forecolor','#ff6b6b','${p.id}')>🔴</button>
+        <button type="button" onclick="formatText('forecolor','#ffd93d','${p.id}')>🟡</button>
+        <button type="button" onclick="formatText('forecolor','#6bcb77','${p.id}')>🟢</button>
+        <button type="button" onclick="formatText('forecolor','#4d96ff','${p.id}')>🔵</button>
       </div>
       <div id="editor-${p.id}" class="edit-editor" contenteditable="true">${p.content||''}</div>
       <button class="btn btn-save" onclick="savePost('${p.id}')">💾 保存修改</button>
@@ -73,8 +73,15 @@ async function loadPosts(){
   </div>`).join('');
 }
 
-function format(cmd,id){document.execCommand(cmd,false,null);document.getElementById('editor-'+id).focus();}
-function toggleEdit(id){const box=document.getElementById('edit-'+id);box.style.display=box.style.display==='none'?'block':'none';}
+function formatText(cmd,id,val){
+  document.execCommand(cmd,false,val);
+  document.getElementById('editor-'+id).focus();
+}
+
+function toggleEdit(id){
+  const box=document.getElementById('edit-'+id);
+  box.style.display=box.style.display==='none'?'block':'none';
+}
 
 let coverUrlMap={};
 async function uploadCover(id){
@@ -89,7 +96,9 @@ async function uploadCover(id){
   if(res.ok){
     coverUrlMap[id]='https://xiongmao-emotion-site.pages.dev/covers/'+file.name;
     document.getElementById('coverstatus-'+id).textContent='封面上传成功！';
-  }else{document.getElementById('coverstatus-'+id).textContent='上传失败';}
+  }else{
+    document.getElementById('coverstatus-'+id).textContent='上传失败';
+  }
 }
 
 async function savePost(id){
@@ -107,9 +116,9 @@ async function savePost(id){
   const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
   const oldJson=await old.json();
   const contentB64=btoa(unescape(encodeURIComponent(JSON.stringify(postsData,null,2))));
-  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'update: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'update post: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
   if(res.ok){alert('保存成功');loadPosts();}
-  else{alert('保存失败');}
+  else{alert('保存失败: '+(await res.text()).slice(0,80));}
 }
 
 async function deletePost(id){
