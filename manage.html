@@ -12,16 +12,19 @@
 .edit-box{background:#1a2340;border-radius:12px;padding:16px;margin-top:12px}
 .edit-box input,.edit-box textarea{width:100%;padding:10px;margin:8px 0;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px}
 .edit-box textarea{min-height:150px}
+.edit-editor{min-height:200px;padding:10px;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px;margin:8px 0}
 .btn-del{background:#ff4757;margin-right:8px}
 .btn-save{background:#2ed573}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.toolbar button{background:#2d3b6e;color:#fff;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px}
 </style>
 </head>
 <body>
 <div class="container" style="padding:24px 20px">
 <h1>📋 文章管理</h1>
-<p>点击文章展开编辑，修改后点保存</p>
+<p>点击编辑展开，修改后保存</p>
 <div class="card">
-<label>GitHub Token（首次使用填写一次即可）</label>
+<label>GitHub Token（首次填写）</label>
 <input id="token" placeholder="github_pat_xxx" style="width:100%">
 </div>
 <div id="postList" style="margin-top:20px"></div>
@@ -54,22 +57,28 @@ async function loadPosts(){
       <label>封面图（点击上传）</label>
       <input type="file" id="coverfile-${p.id}" accept="image/*" onchange="uploadCover('${p.id}')">
       <p id="coverstatus-${p.id}" class="meta"></p>
-      <label>正文</label>
-      <textarea id="content-${p.id}">${esc(p.content)}</textarea>
+      <label>正文（富文本编辑）</label>
+      <div class="toolbar">
+        <button type="button" onclick="format('bold','${p.id}')><b>B</b></button>
+        <button type="button" onclick="format('italic','${p.id}')><i>I</i></button>
+        <button type="button" onclick="format('underline','${p.id}')><u>U</u></button>
+        <button type="button" onclick="format('forecolor','#ff6b6b','${p.id}')>🔴</button>
+        <button type="button" onclick="format('forecolor','#ffd93d','${p.id}')>🟡</button>
+        <button type="button" onclick="format('forecolor','#6bcb77','${p.id}')>🟢</button>
+        <button type="button" onclick="format('forecolor','#4d96ff','${p.id}')>🔵</button>
+      </div>
+      <div id="editor-${p.id}" class="edit-editor" contenteditable="true">${p.content||''}</div>
       <button class="btn btn-save" onclick="savePost('${p.id}')">💾 保存修改</button>
     </div>
   </div>`).join('');
 }
 
-function toggleEdit(id){
-  const box=document.getElementById('edit-'+id);
-  box.style.display=box.style.display==='none'?'block':'none';
-}
+function format(cmd,id){document.execCommand(cmd,false,null);document.getElementById('editor-'+id).focus();}
+function toggleEdit(id){const box=document.getElementById('edit-'+id);box.style.display=box.style.display==='none'?'block':'none';}
 
-let coverUrlMap = {};
-
+let coverUrlMap={};
 async function uploadCover(id){
-  const file = document.getElementById('coverfile-'+id).files[0];
+  const file=document.getElementById('coverfile-'+id).files[0];
   if(!file) return;
   const token=document.getElementById('token').value.trim();
   if(!token){alert('请先填 GitHub Token');return;}
@@ -78,32 +87,29 @@ async function uploadCover(id){
   const contentB64=btoa(await file.arrayBuffer());
   const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'upload cover',content:contentB64,branch:BRANCH})});
   if(res.ok){
-    coverUrlMap[id] = 'https://xiongmao-emotion-site.pages.dev/covers/'+file.name;
+    coverUrlMap[id]='https://xiongmao-emotion-site.pages.dev/covers/'+file.name;
     document.getElementById('coverstatus-'+id).textContent='封面上传成功！';
-  }else{
-    document.getElementById('coverstatus-'+id).textContent='上传失败';
-  }
+  }else{document.getElementById('coverstatus-'+id).textContent='上传失败';}
 }
 
 async function savePost(id){
   const token=document.getElementById('token').value.trim();
   if(!token){alert('请先填 GitHub Token');return;}
   const title=document.getElementById('title-'+id).value.trim();
-  const content=document.getElementById('content-'+id).value;
+  const content=document.getElementById('editor-'+id).innerHTML;
   const idx=postsData.items.findIndex(p=>p.id===id);
   if(idx===-1){alert('文章不存在');return;}
   postsData.items[idx].title=title;
   postsData.items[idx].content=content;
   if(coverUrlMap[id]) postsData.items[idx].cover=coverUrlMap[id];
   postsData.items[idx].excerpt=content.replace(/<[^>]+>/g,'').slice(0,60)+'...';
-  
   const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
   const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
   const oldJson=await old.json();
   const contentB64=btoa(unescape(encodeURIComponent(JSON.stringify(postsData,null,2))));
-  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'update post: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'update: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
   if(res.ok){alert('保存成功');loadPosts();}
-  else{alert('保存失败: '+(await res.text()).slice(0,80));}
+  else{alert('保存失败');}
 }
 
 async function deletePost(id){
