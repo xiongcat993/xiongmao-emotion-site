@@ -14,7 +14,5 @@
     {"id":"course","name":"课程目录与详情","pinned":true},
     {"id":"update","name":"课程更新","pinned":false}
   ],
-  "courses": [
-    {"id":"c1","title":"高质量聊天开场实战课","category":"男生课程","priceType":"付费","price":"¥99","summary":"从陌生开场到持续推进的全链路脚本","outline":["开场框架","破冰话术"],"forWho":"想提升社交表达能力的人"}
-  ]
+  "courses": []
 }
