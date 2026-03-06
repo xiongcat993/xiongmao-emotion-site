@@ -8,8 +8,13 @@
   "showHero": true,
   "showArticles": true,
   "showCourses": false,
+  "wechat": "wta2621",
+  "contactText": "买课程，添加微信",
+  "categories": [
+    {"id":"course","name":"课程目录与详情","pinned":true},
+    {"id":"update","name":"课程更新","pinned":false}
+  ],
   "courses": [
-    {"id":"c1","title":"高质量聊天开场实战课","category":"男生课程","priceType":"付费","price":"¥99","summary":"从陌生开场到持续推进的全链路脚本","outline":["开场框架","破冰话术"],"forWho":"想提升社交表达能力的人"},
-    {"id":"c2","title":"自律系统搭建课（30天）","category":"自我提升","priceType":"会员","price":"会员免费","summary":"围绕作息、运动、任务拆解建立稳定执行系统","outline":["目标拆解","日程模板"],"forWho":"想提升执行力的人"}
+    {"id":"c1","title":"高质量聊天开场实战课","category":"男生课程","priceType":"付费","price":"¥99","summary":"从陌生开场到持续推进的全链路脚本","outline":["开场框架","破冰话术"],"forWho":"想提升社交表达能力的人"}
   ]
 }

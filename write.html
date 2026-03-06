@@ -16,10 +16,17 @@
 <body>
 <div class="container" style="padding:24px 20px">
 <h1>发文章</h1>
-<p>像公众号一样写：选封面、写标题、编辑正文（可加粗/变色），点发布。</p>
+<p>选择栏目、写标题、编辑正文，点发布。</p>
 <div class="card">
 <label>GitHub Token</label>
 <input id="token" placeholder="github_pat_xxx" style="width:100%">
+
+<label>选择栏目</label>
+<select id="category" style="width:100%;padding:10px;border-radius:10px;border:1px solid #2d3b6e;background:#111a36;color:#dce3ff">
+<option value="course">课程目录与详情（置顶）</option>
+<option value="update">课程更新</option>
+<option value="normal" selected>最新文章</option>
+</select>
 
 <label>标题</label>
 <input id="title" style="width:100%">
@@ -73,6 +80,7 @@ $('pubBtn').onclick=async()=>{
     if(!title) throw new Error('请填写标题');
     const content=$('editor').innerHTML.trim();
     if(!content || content=='<br>') throw new Error('请填写正文');
+    const category=$('category').value;
 
     let cover=$('coverUrl').value.trim();
     const file=$('coverFile').files[0];
@@ -85,7 +93,7 @@ $('pubBtn').onclick=async()=>{
     const date=new Date().toISOString().slice(0,10);
     const excerpt=$('editor').innerText.slice(0,60)+'...';
     const posts=await getPosts();
-    const newItem={id,title,cover,content,date,excerpt};
+    const newItem={id,title,cover,content,date,excerpt,category};
     posts.items=[newItem,...posts.items];
     
     const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
