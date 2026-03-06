@@ -3,36 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>熊猫哥情感｜博客+课程资源站</title>
+  <title>熊猫哥情感｜课程站</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="container nav">
-      <div class="logo">熊猫哥情感</div>
+      <div class="logo" id="siteLogo">熊猫哥情感</div>
       <nav>
         <a href="#about">自我介绍</a>
         <a href="#blog">课程目录</a>
         <a href="#courses">课程</a>
+        <a href="admin.html">后台</a>
       </nav>
     </div>
   </header>
 
   <section class="hero container" id="about">
     <div>
-      <h1>技术创作 + 课程分享</h1>
-      <p>这里是你的个人站：前半部分像博客，讲你是谁、做什么；后半部分像课程资源站，支持课程分类、价格标签、课程详情页。</p>
-      <div class="chips">
-        <span>个人品牌</span><span>内容沉淀</span><span>课程变现</span>
-      </div>
+      <h1 id="heroTitle">技术创作 + 课程分享</h1>
+      <p id="heroDesc"></p>
+      <div class="chips" id="heroChips"></div>
     </div>
     <div class="card">
       <h3>站点定位</h3>
-      <ul>
-        <li>博客式首页与文章模块</li>
-        <li>课程列表与筛选</li>
-        <li>课程详情与购买引导</li>
-      </ul>
+      <ul id="heroBullets"></ul>
     </div>
   </section>
 
@@ -45,28 +40,15 @@
     <div class="row">
       <h2>🎓 课程资源</h2>
       <div>
-        <select id="categoryFilter">
-          <option value="all">全部分类</option>
-          <option value="男生课程">男生课程</option>
-          <option value="女生课程">女生课程</option>
-          <option value="自我提升">自我提升</option>
-        </select>
-        <select id="priceFilter">
-          <option value="all">全部价格</option>
-          <option value="免费">免费</option>
-          <option value="付费">付费</option>
-          <option value="会员">会员</option>
-        </select>
+        <select id="categoryFilter"><option value="all">全部分类</option></select>
+        <select id="priceFilter"><option value="all">全部价格</option></select>
       </div>
     </div>
     <div class="grid courses" id="courseList"></div>
   </section>
 
-  <footer>
-    <div class="container">© 2026 熊猫哥 Studio</div>
-  </footer>
+  <footer><div class="container" id="footerText">© 2026 熊猫哥情感</div></footer>
 
-  <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
