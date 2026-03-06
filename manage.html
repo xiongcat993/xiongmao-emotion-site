@@ -6,23 +6,22 @@
 <title>文章管理</title>
 <link rel="stylesheet" href="style.css"/>
 <style>
-.post-item{background:#151c33;border:1px solid #273259;border-radius:12px;padding:16px;margin-bottom:12px}
+.post-item{background:#151c33;border:1px solid #273259;border-radius:12px;padding:16px;margin-bottom:16px}
 .post-item h3{margin:0 0 8px}
-.post-item .meta{color:#a7b0d6;font-size:14px;margin-bottom:8px}
-.post-item .actions{display:flex;gap:8px;flex-wrap:wrap}
-.btn-del{background:#ff4757}
-.btn-edit{background:#ffa502}
-.edit-panel{background:#1a2340;border:1px solid #3d4b7e;border-radius:12px;padding:16px;margin-top:12px}
-.edit-panel input,.edit-panel textarea{width:100%;padding:10px;margin:8px 0;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px}
-.edit-panel textarea{min-height:200px}
+.post-item .meta{color:#a7b0d6;font-size:14px;margin-bottom:12px}
+.edit-box{background:#1a2340;border-radius:12px;padding:16px;margin-top:12px}
+.edit-box input,.edit-box textarea{width:100%;padding:10px;margin:8px 0;background:#111a36;color:#e8ecff;border:1px solid #2d3b6e;border-radius:8px}
+.edit-box textarea{min-height:150px}
+.btn-del{background:#ff4757;margin-right:8px}
+.btn-save{background:#2ed573}
 </style>
 </head>
 <body>
 <div class="container" style="padding:24px 20px">
 <h1>📋 文章管理</h1>
-<p>在此管理已发布的文章</p>
+<p>点击文章展开编辑，修改后点保存</p>
 <div class="card">
-<label>GitHub Token</label>
+<label>GitHub Token（首次使用填写一次即可）</label>
 <input id="token" placeholder="github_pat_xxx" style="width:100%">
 </div>
 <div id="postList" style="margin-top:20px"></div>
@@ -33,68 +32,94 @@ const BRANCH='main';
 const POSTS='posts.json';
 
 async function getPosts(){ const r=await fetch(POSTS+'?_='+Date.now()); return r.json(); }
-function esc(s=''){return s.replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+function esc(s=''){return (s||'').replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
+
+let postsData = [];
+
 async function loadPosts(){
-  const posts=await getPosts();
+  postsData = await getPosts();
   const list=document.getElementById('postList');
-  list.innerHTML=posts.items.map(p=>`<div class="post-item" id="post-${p.id}">
+  if(!postsData.items || postsData.items.length===0){
+    list.innerHTML='<p>暂无文章</p>';
+    return;
+  }
+  list.innerHTML=postsData.items.map((p,idx)=>`<div class="post-item">
     <h3>${esc(p.title)}</h3>
-    <p class="meta">${p.date||''} | ID: ${p.id}</p>
-    <div class="actions">
-      <button class="btn btn-edit" onclick="showEdit('${p.id}')">✏️ 编辑</button>
-      <button class="btn btn-del" onclick="deletePost('${p.id}')">🗑️ 删除</button>
-    </div>
-    <div id="edit-${p.id}" class="edit-panel" style="display:none">
+    <p class="meta">${p.date||''}</p>
+    <button class="btn btn-del" onclick="deletePost('${p.id}')">🗑️ 删除</button>
+    <button class="btn" onclick="toggleEdit('${p.id}')">✏️ 编辑</button>
+    <div id="edit-${p.id}" class="edit-box" style="display:none">
       <label>标题</label>
-      <input id="title-${p.id}" value="${esc(p.title||'')}">
-      <label>封面图URL</label>
-      <input id="cover-${p.id}" value="${esc(p.cover||'')}">
+      <input id="title-${p.id}" value="${esc(p.title)}">
+      <label>封面图（点击上传）</label>
+      <input type="file" id="coverfile-${p.id}" accept="image/*" onchange="uploadCover('${p.id}')">
+      <p id="coverstatus-${p.id}" class="meta"></p>
       <label>正文</label>
-      <textarea id="content-${p.id}">${esc(p.content||'')}</textarea>
-      <button class="btn" onclick="savePost('${p.id}')">💾 保存修改</button>
+      <textarea id="content-${p.id}">${esc(p.content)}</textarea>
+      <button class="btn btn-save" onclick="savePost('${p.id}')">💾 保存修改</button>
     </div>
   </div>`).join('');
 }
-function showEdit(id){
-  const p=document.getElementById('edit-'+id);
-  p.style.display=p.style.display==='none'?'block':'none';
+
+function toggleEdit(id){
+  const box=document.getElementById('edit-'+id);
+  box.style.display=box.style.display==='none'?'block':'none';
 }
+
+let coverUrlMap = {};
+
+async function uploadCover(id){
+  const file = document.getElementById('coverfile-'+id).files[0];
+  if(!file) return;
+  const token=document.getElementById('token').value.trim();
+  if(!token){alert('请先填 GitHub Token');return;}
+  document.getElementById('coverstatus-'+id).textContent='上传中...';
+  const api=`https://api.github.com/repos/${REPO}/contents/covers/${file.name}`;
+  const contentB64=btoa(await file.arrayBuffer());
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'upload cover',content:contentB64,branch:BRANCH})});
+  if(res.ok){
+    coverUrlMap[id] = 'https://xiongmao-emotion-site.pages.dev/covers/'+file.name;
+    document.getElementById('coverstatus-'+id).textContent='封面上传成功！';
+  }else{
+    document.getElementById('coverstatus-'+id).textContent='上传失败';
+  }
+}
+
 async function savePost(id){
   const token=document.getElementById('token').value.trim();
   if(!token){alert('请先填 GitHub Token');return;}
   const title=document.getElementById('title-'+id).value.trim();
-  const cover=document.getElementById('cover-'+id).value.trim();
   const content=document.getElementById('content-'+id).value;
-  const posts=await getPosts();
-  const idx=posts.items.findIndex(p=>p.id===id);
+  const idx=postsData.items.findIndex(p=>p.id===id);
   if(idx===-1){alert('文章不存在');return;}
-  posts.items[idx].title=title;
-  posts.items[idx].cover=cover;
-  posts.items[idx].content=content;
-  posts.items[idx].excerpt=content.slice(0,60)+'...';
+  postsData.items[idx].title=title;
+  postsData.items[idx].content=content;
+  if(coverUrlMap[id]) postsData.items[idx].cover=coverUrlMap[id];
+  postsData.items[idx].excerpt=content.replace(/<[^>]+>/g,'').slice(0,60)+'...';
+  
   const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
   const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
   const oldJson=await old.json();
-  const dataStr=JSON.stringify(posts,null,2);
-  const contentB64=btoa(unescape(encodeURIComponent(dataStr)));
+  const contentB64=btoa(unescape(encodeURIComponent(JSON.stringify(postsData,null,2))));
   const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'update post: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
   if(res.ok){alert('保存成功');loadPosts();}
   else{alert('保存失败: '+(await res.text()).slice(0,80));}
 }
+
 async function deletePost(id){
-  if(!confirm('确定删除这篇文章？')) return;
+  if(!confirm('确定删除？')) return;
   const token=document.getElementById('token').value.trim();
   if(!token){alert('请先填 GitHub Token');return;}
-  const posts=await getPosts();
-  posts.items=posts.items.filter(p=>p.id!==id);
+  postsData.items=postsData.items.filter(p=>p.id!==id);
   const api=`https://api.github.com/repos/${REPO}/contents/${POSTS}`;
   const old=await fetch(api+`?ref=${BRANCH}`,{headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'}});
   const oldJson=await old.json();
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(posts,null,2))));
-  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'delete post: '+id,content,sha:oldJson.sha,branch:BRANCH})});
+  const contentB64=btoa(unescape(encodeURIComponent(JSON.stringify(postsData,null,2))));
+  const res=await fetch(api,{method:'PUT',headers:{Authorization:`Bearer ${token}`,'Accept':'application/vnd.github+json'},body:JSON.stringify({message:'delete: '+id,content:contentB64,sha:oldJson.sha,branch:BRANCH})});
   if(res.ok){alert('删除成功');loadPosts();}
-  else{alert('删除失败: '+(await res.text()).slice(0,80));}
+  else{alert('删除失败');}
 }
+
 document.getElementById('token').value=localStorage.getItem('token')||'';
 document.getElementById('token').addEventListener('change',e=>localStorage.setItem('token',e.target.value));
 loadPosts();
